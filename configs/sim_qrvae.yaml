@@ -11,11 +11,12 @@ data_params:
 
 
 exp_params:
+  name: "without_conditioning"
   LR: 0.001
   weight_decay: 0.0
   # scheduler_gamma: 0.95 # NOTE: Uncomment this line to use a scheduler
   kld_weight: 0.28
-  manual_seed: 1265
+  manual_seed: 42
 
 trainer_params:
   devices: [0]

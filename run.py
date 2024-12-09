@@ -29,11 +29,11 @@ with open(args.filename, 'r') as file:
     except yaml.YAMLError as exc:
         print(exc)
 
-
-tb_logger =  TensorBoardLogger(save_dir=config['logging_params']['save_dir'],
+save_dir = os.path.join(config['logging_params']['save_dir'], config['exp_params']['name'])
+tb_logger =  TensorBoardLogger(save_dir=save_dir,
                                name=config['model_params']['name'],
                                version=f"seed_{config['exp_params']['manual_seed']}")
-csv_logger = CSVLogger(save_dir=config['logging_params']['save_dir'],
+csv_logger = CSVLogger(save_dir=save_dir,
                           name=config['model_params']['name'],
                           version=f"seed_{config['exp_params']['manual_seed']}")
 

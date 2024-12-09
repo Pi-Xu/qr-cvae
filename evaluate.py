@@ -21,7 +21,8 @@ with open(args.filename, 'r') as file:
     except yaml.YAMLError as exc:
         print(exc)
 
-model_dir = os.path.join(config['logging_params']['save_dir'], 
+save_dir = os.path.join(config['logging_params']['save_dir'], config['exp_params']['name'])
+model_dir = os.path.join(save_dir,
                          config['model_params']['name'],
                          f"seed_{config['exp_params']['manual_seed']}",
                          'checkpoints', 'last.ckpt')
