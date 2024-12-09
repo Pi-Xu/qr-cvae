@@ -37,7 +37,6 @@ def get_sim_datset(data_dir: str, split: str):
                                              torch.tensor(y, dtype=torch.float32))
     return dataset
 
-
 class VAEDataset(LightningDataModule):
     """
     PyTorch Lightning data module 

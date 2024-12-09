@@ -3,7 +3,7 @@ import yaml
 import argparse
 import numpy as np
 from pathlib import Path
-from dataset import SimDataset, VAEDataset
+from utils import vae_datasets
 from models import *
 from experiment import VAEXperiment
 import pytorch_lightning as pl
@@ -44,7 +44,7 @@ model = vae_models[config['model_params']['name']](**config['model_params'])
 experiment = VAEXperiment(model,
                           config['exp_params'])
 
-data = SimDataset(**config["data_params"], pin_memory=len(config['trainer_params']['devices']) != 0)
+data = vae_datasets[config["data_params"]['name']](**config["data_params"], pin_memory=len(config['trainer_params']['devices']) != 0)
 
 data.setup()
 

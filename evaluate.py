@@ -3,7 +3,7 @@ from universal_divergence import estimate
 import yaml
 import argparse
 import numpy as np
-from dataset import SimDataset
+from utils import vae_datasets
 from models import *
 import pytorch_lightning as pl
 
@@ -36,7 +36,7 @@ model_weights = {k.replace("model.", ""): v for k, v in checkpoint["state_dict"]
 
 model.load_state_dict(model_weights)
 
-data = SimDataset(**config["data_params"], pin_memory=len(config['trainer_params']['devices']) != 0)
+data = vae_datasets[config["data_params"]['name']](**config["data_params"], pin_memory=len(config['trainer_params']['devices']) != 0)
 data.setup()
 
 def calculate_kl_divergence(true_samples, generated_samples):
