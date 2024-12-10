@@ -92,6 +92,18 @@ class SimVAE(BaseVAE):
         samples = self.reparameterize(*samples)
         return samples
 
+    def sample_cond(self,
+                num_samples:int,
+                current_device, **kwargs) -> Tensor:
+          """
+          Samples from the latent space and return the corresponding
+          image space map.
+          :param num_samples: (Int) Number of samples
+          :param current_device: (Int) Device to run the model
+          :return: (Tensor)
+          """
+          return self.sample(num_samples, current_device, **kwargs)
+
     def loss_function(self,
                       *args,
                       **kwargs) -> dict:

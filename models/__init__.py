@@ -1,6 +1,8 @@
 from .base import *
 from .sim_vae import *
 from .sim_qrvae import SimQRVAE
+from .sim_cvae import SimCVAE
+from .sim_cqrvae import SimCQRVAE
 
 # Aliases
 # VAE = VanillaVAE
@@ -9,7 +11,10 @@ from .sim_qrvae import SimQRVAE
 # GumbelVAE = CategoricalVAE
 
 vae_models = {'SimVAE':SimVAE,
-              'SimQRVAE':SimQRVAE
+              'SimQRVAE':SimQRVAE,
+              'SimCVAE':SimCVAE,
+              'SimCQRVAE':SimCQRVAE,
+              
 }
 
 # vae_models = {'HVAE':HVAE,
