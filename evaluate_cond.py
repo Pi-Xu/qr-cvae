@@ -3,6 +3,8 @@ from universal_divergence import estimate
 import yaml
 import argparse
 import numpy as np
+
+from utils import get_kdeplot
 from utils import vae_datasets
 from models import *
 import pytorch_lightning as pl
@@ -49,3 +51,12 @@ with torch.no_grad():
     kld = calculate_kl_divergence(data_origin, data_sampled)
 
 print(f"KL Divergence({config['model_params']['name']}): {kld}")
+
+output_dir = os.path.join(save_dir,
+                         config['model_params']['name'],
+                        f"seed_{config['exp_params']['manual_seed']}",
+                        )  
+    
+get_kdeplot(data_sampled.numpy(), output_dir, "sampled_data")
+get_kdeplot(data_origin.numpy(), output_dir, "origin_data")
+

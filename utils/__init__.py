@@ -1,6 +1,6 @@
 from .dataset import SimDataset
 from .sim_cond_dataset import SimCondDataset
-from .utils import clamp
+from .utils import clamp, get_kdeplot
 
 vae_datasets = {
     "sim": SimDataset,
