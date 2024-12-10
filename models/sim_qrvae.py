@@ -1,11 +1,13 @@
 from typing import Sequence
 from .types_ import *
 from .base import BaseVAE
+from utils import clamp
 from torch import distributions as D
 
 import torch
 from torch import nn
 from torch.nn import functional as F
+
 
 class SimQRVAE(BaseVAE):
     '''
@@ -128,7 +130,7 @@ class SimQRVAE(BaseVAE):
 
         kld_weight = kwargs['kld_weight']
         
-        q_dist = D.Independent(D.Normal(mu, torch.exp(log_var).sqrt()+epsilon), 1)
+        q_dist = D.Independent(D.Normal(mu, torch.exp(clamp(log_var)).sqrt()), 1)
         z = q_dist.rsample()
 
         loss_50 = torch.sum(torch.max(0.15 * (inputs-q15), (0.15 - 1) * (inputs-q15)).view(-1, 4),(1))
