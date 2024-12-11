@@ -145,4 +145,9 @@ class SimQRVAE(BaseVAE):
         elbo = -recons_loss - kld_weight*kld_loss
 
         loss = -elbo.mean()
-        return {'loss': loss, 'Reconstruction_Loss':recons_loss.detach().mean(), 'KLD':kld_loss.detach().mean()}
+        
+        
+        return {'loss': loss, 
+                'Reconstruction_Loss':recons_loss.detach().mean(), 
+                'KLD':kld_loss.detach().mean(),
+                'sigmaX':(q50.detach()-q15.detach()).mean()}

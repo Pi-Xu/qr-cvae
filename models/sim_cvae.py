@@ -43,33 +43,59 @@ class SimCVAE(BaseVAE):
         self.latent_dim = latent_dim
         self.hidden_dim = hidden_dim
         
+
         # 编码器部分
-        self.encoder_fc1 = nn.Linear(4, hidden_dim)           # 第一层隐藏层
-        self.z_mean = nn.Linear(hidden_dim, latent_dim)     # z 的均值
-        self.z_log_var = nn.Linear(hidden_dim, latent_dim)  # z 的对数方差
-        self.r_mean = nn.Linear(hidden_dim, 3)              # r 的均值
-        self.r_log_var = nn.Linear(hidden_dim, 3)           # r 的对数方差
+        self.encoder = nn.Sequential(
+            nn.Linear(4, hidden_dim), 
+            nn.Tanh()
+        )  # 第一隐藏层
+        self.z_mean = nn.Sequential(
+            nn.Linear(hidden_dim, latent_dim)
+        )  # z 的均值
+        self.z_log_var = nn.Sequential(
+            nn.Linear(hidden_dim, latent_dim)
+        )  # z 的对数方差
+        
+        self.r_mean = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.Tanh(),
+            nn.Linear(hidden_dim, 2)
+        )  # r 的均值
+        self.r_log_var = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.Tanh(),
+            nn.Linear(hidden_dim, 2)
+        )  # r 的对数方差
 
         # p(z|r) 的生成器部分
-        self.r_enc_fc1 = nn.Linear(3, hidden_dim)           # 第一层隐藏层
-        self.pz_mean = nn.Linear(hidden_dim, latent_dim)                   # 从 r 推断 p(z|r) 的均值
-        self.pz_log_var = nn.Linear(hidden_dim, latent_dim)                # 从 r 推断 p(z|r) 的对数方差
+        self.r_encoder = nn.Sequential(
+            nn.Linear(2, 2),
+            nn.Tanh()
+        )  # 第一隐藏层
+        self.pz_mean = nn.Sequential(
+            nn.Linear(2, latent_dim)
+        )  # p(z|r) 的均值
+        self.pz_log_var = nn.Sequential(
+            nn.Linear(2, latent_dim)
+        )  # p(z|r) 的对数方差
 
         # 解码器部分
         self.decoder_fc1 = nn.Linear(latent_dim, hidden_dim)  # 解码第一层隐藏层
         self.decoder_fc2 = nn.Linear(hidden_dim, 4 * 2)             # 重建输出层
 
     def encode(self, x):
-        x = F.dropout(x, p=0.25, training=self.training)  # Dropout
-        x = torch.relu(self.encoder_fc1(x))               # 第一层
-        z_mean = self.z_mean(x)                           # z 的均值
-        z_log_var = self.z_log_var(x)                     # z 的对数方差
-        r_mean = self.r_mean(x)                           # r 的均值
-        r_log_var = self.r_log_var(x)                     # r 的对数方差
+        """
+        对输入 x 进行编码，返回 z 和 r 的均值与对数方差。
+        """
+        x = self.encoder(x)  # 编码器第一层
+        z_mean = self.z_mean(x)  # z 的均值
+        z_log_var = self.z_log_var(x)  # z 的对数方差
+        r_mean = self.r_mean(x)  # r 的均值
+        r_log_var = self.r_log_var(x)  # r 的对数方差
         return z_mean, z_log_var, r_mean, r_log_var
 
     def decode(self, z):
-        z = torch.relu(self.decoder_fc1(z))               # 第一层
+        z = torch.tanh(self.decoder_fc1(z))               # 第一层
         outputs = self.decoder_fc2(z)                     # 输出: 4 + 4
         return outputs
     
@@ -82,7 +108,7 @@ class SimCVAE(BaseVAE):
         z = self.reparameterize(mu, log_var)
         
         pr_sample = self.reparameterize(r_mean, r_log_var)
-        pr_sample = self.r_enc_fc1(pr_sample)
+        pr_sample = self.r_encoder(pr_sample)
         pz_mean = self.pz_mean(pr_sample)
         pz_log_var = self.pz_log_var(pr_sample)
 
@@ -122,7 +148,7 @@ class SimCVAE(BaseVAE):
         """
         try:
             labels = kwargs['labels']
-            labels = self.r_enc_fc1(labels)
+            labels = self.r_encoder(labels)
             pz_mean = self.pz_mean(labels)
             pz_log_var = self.pz_log_var(labels)
             z = self.reparameterize(pz_mean, pz_log_var)
@@ -183,17 +209,23 @@ class SimCVAE(BaseVAE):
 
         kld_weight = kwargs['kld_weight']
             
-        # p_dist = D.Independent(D.Normal(x_mu, torch.exp(x_log_var).sqrt()+epsilon), 1)
-        # recons_loss = p_dist.log_prob(inputs) # NOTE: changes here
-        recons_loss = - 0.5 * ((x_mu - inputs)**2 / (torch.exp(clamp(x_log_var))) + x_log_var)
-        recons_loss = recons_loss.sum(1)
+        p_dist = D.Independent(D.Normal(x_mu, torch.exp(x_log_var).sqrt()+epsilon), 1)
+        recons_loss = p_dist.log_prob(inputs) # NOTE: changes here
+        # recons_loss = - 0.5 * ((x_mu - inputs)**2 / (torch.exp((x_log_var))) + x_log_var)
+        # recons_loss = recons_loss.sum(1)
         
-        kld_loss = 1 + log_var - pz_log_var \
-              - torch.square(mu - pz_mean) / (torch.exp(clamp(pz_log_var))) \
-              - torch.exp(clamp(log_var)) / (torch.exp(clamp(pz_log_var)))
-        kld_loss = -0.5 * kld_loss.mean(dim=1)
+        # kld_loss = 1 + log_var - pz_log_var \
+        #       - torch.square(mu - pz_mean) / (torch.exp((pz_log_var))) \
+        #       - torch.exp((log_var)) / (torch.exp((pz_log_var)))
+        # kld_loss = -0.5 * kld_loss.sum(dim=1)
+        
+        prior = D.Independent(D.Normal(pz_mean, torch.exp(0.5*pz_log_var)), 1)
+        q_dist = D.Independent(D.Normal(mu, torch.exp(0.5*log_var)), 1)
+        z = q_dist.rsample()
+        
+        kld_loss = q_dist.log_prob(z) - prior.log_prob(z)
                 
-        label_loss = - 0.5 * ((r_mean - labels)**2 / (torch.exp(clamp(r_log_var))) + r_log_var)
+        label_loss = - 0.5 * ((r_mean - labels)**2 / (torch.exp((r_log_var))) + r_log_var)
         label_loss = label_loss.mean(dim=1)
         
         elbo = recons_loss - kld_weight*kld_loss + 1.0 * label_loss
@@ -203,4 +235,6 @@ class SimCVAE(BaseVAE):
         return {'loss': loss, 
                 'Reconstruction_Loss':-recons_loss.detach().mean(), 
                 'KLD':kld_loss.detach().mean(),
-                'Label_Loss': -label_loss.detach().mean()}
+                'Label_Loss': -label_loss.detach().mean(),
+                'sigmaX': (x_log_var.detach()/2).exp().mean(),
+                }
