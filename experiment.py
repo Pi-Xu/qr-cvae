@@ -37,7 +37,6 @@ class VAEXperiment(pl.LightningModule):
         results = self.forward(real_img, labels = labels)
         train_loss = self.model.loss_function(*results,
                                               kld_weight = self.params['kld_weight'],
-                                            #   optimizer_idx=optimizer_idx,
                                               batch_idx = batch_idx)
 
         self.log_dict({key: val.item() for key, val in train_loss.items()}, sync_dist=True)
@@ -50,43 +49,41 @@ class VAEXperiment(pl.LightningModule):
 
         results = self.forward(real_img, labels = labels)
         val_loss = self.model.loss_function(*results,
-                                            kld_weight = self.params['kld_weight'], #real_img.shape[0]/ self.num_val_imgs,
-                                            # optimizer_idx = optimizer_idx,
+                                            kld_weight = self.params['kld_weight'],
                                             batch_idx = batch_idx)
 
         self.log_dict({f"val_{key}": val.item() for key, val in val_loss.items()}, sync_dist=True)
 
         
-    def on_validation_end(self) -> None:
-        self.sample_images()
-        
-    def sample_images(self):
-        # Get sample reconstruction image            
-        test_input, test_label = next(iter(self.trainer.datamodule.test_dataloader()))
-        test_input = test_input.to(self.curr_device)
-        test_label = test_label.to(self.curr_device)
+    # def on_validation_end(self) -> None:
+    #     self.sample_images()
+    # def sample_images(self):
+    #     # Get sample reconstruction image            
+    #     test_input, test_label = next(iter(self.trainer.datamodule.test_dataloader()))
+    #     test_input = test_input.to(self.curr_device)
+    #     test_label = test_label.to(self.curr_device)
 
-        # test_input, test_label = batch
-        recons = self.model.generate(test_input, labels = test_label)
-        vutils.save_image(recons.data,
-                          os.path.join(self.logger.log_dir , 
-                                       "Reconstructions", 
-                                       f"recons_{self.logger.name}_Epoch_{self.current_epoch}.png"),
-                          normalize=True,
-                          nrow=12)
+    #     # test_input, test_label = batch
+    #     recons = self.model.generate(test_input, labels = test_label)
+    #     vutils.save_image(recons.data,
+    #                       os.path.join(self.logger.log_dir , 
+    #                                    "Reconstructions", 
+    #                                    f"recons_{self.logger.name}_Epoch_{self.current_epoch}.png"),
+    #                       normalize=True,
+    #                       nrow=12)
 
-        try:
-            samples = self.model.sample(144,
-                                        self.curr_device,
-                                        labels = test_label)
-            vutils.save_image(samples.cpu().data,
-                              os.path.join(self.logger.log_dir , 
-                                           "Samples",      
-                                           f"{self.logger.name}_Epoch_{self.current_epoch}.png"),
-                              normalize=True,
-                              nrow=12)
-        except Warning:
-            pass
+    #     try:
+    #         samples = self.model.sample(144,
+    #                                     self.curr_device,
+    #                                     labels = test_label)
+    #         vutils.save_image(samples.cpu().data,
+    #                           os.path.join(self.logger.log_dir , 
+    #                                        "Samples",      
+    #                                        f"{self.logger.name}_Epoch_{self.current_epoch}.png"),
+    #                           normalize=True,
+    #                           nrow=12)
+    #     except Warning:
+    #         pass
 
     def configure_optimizers(self):
 

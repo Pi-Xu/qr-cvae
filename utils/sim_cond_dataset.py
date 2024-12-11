@@ -13,8 +13,8 @@ def get_sim_cond_datset(data_dir: str, split: str):
     elif split == 'test':
         data = np.loadtxt(data_dir+'test.csv', delimiter=',')       
     
-    X = data[:, :-3]
-    y = data[:, -3:]
+    X = data[:, :-2]
+    y = data[:, -2:]
     
     dataset = torch.utils.data.TensorDataset(torch.tensor(X, dtype=torch.float32), 
                                              torch.tensor(y, dtype=torch.float32))
